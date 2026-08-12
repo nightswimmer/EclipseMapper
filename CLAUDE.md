@@ -1,0 +1,11 @@
+- Read the file PROJECT_INSTRUCTIONS.md to get information about the project.
+- Read the file HANDOFF.md, if it exists to continue the unfinished work from a previous session.
+- Ignore the file TODO.md.
+- When something is unclear or ambiguous, ask for clarifications.
+- When I ask questions about a bug or feature, answer the question but don't change anything straight away. If the question implies correcting a bug or adding/removing/tweaking any features, always confirm first.
+- If something feels incomplete, suggest modifications or things to add.
+- Before big updates or big structure changes, remind me to push to GitHub.
+- When I say we're finishing, closing the chat or it's time for a commit, do the following:
+    -Update the file PROJECT_INSTRUCTIONS.md with the current state of the project. This file will be passed to future chats to serve as a reference point. It doesn't need to go into details about variable name and stuff like that, only high-level stuff. 
+    -Update file README.md to be displayed in github page. In the end, tell me an overview of the changes, and suggest a commit name and description for git. I will do the commit in the end. Never to the commit yourself.
+    -If there is unfinished work to do, write the relevant information to the file HANDOFF.md, so we can continue the work in the next chat. This file should only contain the plan of what's left to do, with any extra information that might help doing it. It should not list what's already completed. 
