@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eclipse Mapper — 100 Years of Solar Eclipses</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="topbar">
+      <div id="title-block">
+        <h1>Eclipse Mapper</h1>
+        <p id="subtitle">Solar eclipses 2026 – 2126</p>
+      </div>
+
+      <div id="controls">
+        <div id="range-control">
+          <div id="range-labels">
+            <span id="label-start" class="range-date"></span>
+            <span id="range-count"></span>
+            <span id="label-end" class="range-date"></span>
+          </div>
+          <div id="slider">
+            <div id="slider-track"></div>
+            <div id="slider-fill"></div>
+            <div id="handle-start" class="slider-handle" tabindex="0" role="slider" aria-label="Start date"></div>
+            <div id="handle-end" class="slider-handle" tabindex="0" role="slider" aria-label="End date"></div>
+          </div>
+          <div id="slider-scale"></div>
+        </div>
+
+        <div id="filters" role="group" aria-label="Eclipse types">
+          <label><input type="checkbox" data-kind="total" checked /><span>Total</span><em id="count-total"></em></label>
+          <label><input type="checkbox" data-kind="annular" checked /><span>Annular</span><em id="count-annular"></em></label>
+          <label><input type="checkbox" data-kind="hybrid" checked /><span>Hybrid</span><em id="count-hybrid"></em></label>
+          <label><input type="checkbox" data-kind="partial" /><span>Partial</span><em id="count-partial"></em></label>
+        </div>
+
+        <div id="legend">
+          <span class="legend-caption">sooner</span>
+          <div id="legend-ramp"></div>
+          <span class="legend-caption">later</span>
+        </div>
+      </div>
+    </header>
+
+    <main id="globe-container">
+      <div id="loading">Loading eclipse data…</div>
+      <div id="hint">Drag to rotate · scroll to zoom · hover a path for local timing · click a path to isolate it and see its full visibility zone</div>
+    </main>
+
+    <div id="tooltip" hidden></div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
