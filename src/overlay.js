@@ -24,14 +24,20 @@ export class Overlay {
     const { ctx } = this;
     ctx.clearRect(0, 0, W, H);
 
-    // Painter's order: earlier first, hovered above, the selected one on top.
+    // Painter's order: lunar zones (huge) under solar geometry, earlier first,
+    // hovered above, the selected one on top.
     const rank = (e) => (e.id === selectedId ? 2 : hovered.has(e.id) ? 1 : 0);
-    const sorted = [...eclipses].sort((a, b) => (rank(a) - rank(b)) || (a.peakMs - b.peakMs));
+    const bodyRank = (e) => (e.body === 'lunar' ? 0 : 1);
+    const sorted = [...eclipses].sort(
+      (a, b) => (rank(a) - rank(b)) || (bodyRank(a) - bodyRank(b)) || (a.peakMs - b.peakMs),
+    );
 
     // With many overlapping partial-eclipse footprints, fade the fills so the
     // map stays readable; outlines and hover emphasis carry the identity.
-    const partials = eclipses.filter((e) => !e.bandRing).length;
+    const partials = eclipses.filter((e) => e.body === 'solar' && !e.bandRing).length;
     const regionAlpha = Math.min(0.15, 2.5 / Math.max(1, partials));
+    const lunars = eclipses.filter((e) => e.body === 'lunar').length;
+    const lunarAlpha = Math.min(0.12, 2 / Math.max(1, lunars));
     const crowded = eclipses.length > 60;
 
     for (const e of sorted) {
@@ -42,6 +48,30 @@ export class Overlay {
       // A faded eclipse under the cursor lifts a little so click targets are
       // previewable even while another eclipse is isolated.
       const dim = faded ? (hot ? 0.55 : 0.18) : 1;
+
+      // Lunar eclipse: two nested visibility zones. The fringe (part of the
+      // eclipse visible) gets a faint fill and a dashed outline — the dashes
+      // distinguish lunar boundaries from solar ones at a glance — and the
+      // core (entire eclipse visible) a stronger fill.
+      if (e.body === 'lunar') {
+        const anyPath = this.ringsPath(e.zoneAnyRings);
+        const allPath = this.ringsPath(e.zoneAllRings);
+        ctx.fillStyle = rgbCss(rgb, selected ? 0.12 : (hot ? 0.14 : lunarAlpha * 0.7) * dim);
+        ctx.fill(anyPath, 'evenodd');
+        ctx.setLineDash([12, 8]);
+        ctx.strokeStyle = rgbCss(rgb, selected ? 0.95 : (hot ? 0.95 : 0.45) * dim);
+        ctx.lineWidth = selected ? 2.5 : hot ? 3 : 1.5;
+        ctx.stroke(anyPath);
+        ctx.setLineDash([]);
+        ctx.fillStyle = rgbCss(rgb, selected ? 0.38 : (hot ? 0.32 : lunarAlpha * 2.2) * dim);
+        ctx.fill(allPath, 'evenodd');
+        if (selected || hot) {
+          ctx.strokeStyle = rgbCss(rgb, 0.9 * dim);
+          ctx.lineWidth = 2;
+          ctx.stroke(allPath);
+        }
+        continue;
+      }
 
       // Penumbral (partial visibility) zone.
       if (e.regionRings.length && (selected || !e.bandRing)) {

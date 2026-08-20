@@ -5,12 +5,15 @@ import { localCircumstances } from './lib/bessel.js';
 
 // Orange sequential ramp (light = sooner, dark = later), monotone lightness.
 export const RAMP = ['#fdd0a2', '#fdae6b', '#fd8d3c', '#f16913', '#d94801', '#a63603', '#7f2704'];
+// Blue counterpart for lunar eclipses.
+export const LUNAR_RAMP = ['#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#083168'];
 
 const KIND_LABEL = {
   total: 'Total',
   annular: 'Annular',
   hybrid: 'Hybrid',
   partial: 'Partial',
+  penumbral: 'Penumbral',
 };
 
 export async function loadEclipses(url = 'data/eclipses.json') {
@@ -25,6 +28,8 @@ export function prepareEclipses(raw) {
     const t0Ms = Date.parse(e.t0);
     return {
       ...e,
+      id: `s${e.id}`,
+      body: 'solar',
       peakMs,
       t0Ms,
       label: `${KIND_LABEL[e.kind]} solar eclipse`,
@@ -33,6 +38,31 @@ export function prepareEclipses(raw) {
       regionRings: e.region.map((ring, i) => unwrapRing(ring, e.regionPoles[i])),
       bandRing: e.band ? unwrapRing(e.band, 0) : null,
       centralUnwrapped: e.central.length ? unwrapLine(e.central) : null,
+    };
+  });
+}
+
+export async function loadLunarEclipses(url = 'data/lunar-eclipses.json') {
+  const res = await fetch(import.meta.env.BASE_URL + url);
+  if (!res.ok) throw new Error(`Failed to load lunar eclipse data (${res.status})`);
+  return prepareLunarEclipses(await res.json());
+}
+
+export function prepareLunarEclipses(raw) {
+  return raw.eclipses.map((e) => {
+    const peakMs = Date.parse(e.peak);
+    return {
+      ...e,
+      id: `l${e.id}`,
+      body: 'lunar',
+      peakMs,
+      startMs: Date.parse(e.start),
+      endMs: Date.parse(e.end),
+      label: `${KIND_LABEL[e.kind]} lunar eclipse`,
+      dateLabel: formatDate(peakMs),
+      // zoneAll: entire eclipse visible; zoneAny: at least part of it visible.
+      zoneAllRings: e.zoneAll.map((ring, i) => unwrapRing(ring, e.zoneAllPoles[i])),
+      zoneAnyRings: e.zoneAny.map((ring, i) => unwrapRing(ring, e.zoneAnyPoles[i])),
     };
   });
 }
@@ -116,17 +146,19 @@ export function localAt(eclipse, lat, lon) {
 // Color: position of the eclipse's peak within the selected window -> ramp.
 // ---------------------------------------------------------------------------
 
-const rampRgb = RAMP.map((hex) => [
+const toRgb = (hex) => [
   parseInt(hex.slice(1, 3), 16),
   parseInt(hex.slice(3, 5), 16),
   parseInt(hex.slice(5, 7), 16),
-]);
+];
+const rampRgbSolar = RAMP.map(toRgb);
+const rampRgbLunar = LUNAR_RAMP.map(toRgb);
 
-export function rampColor(f) {
-  const x = Math.max(0, Math.min(1, f)) * (rampRgb.length - 1);
-  const i = Math.min(rampRgb.length - 2, Math.floor(x));
+export function rampColor(f, ramp = rampRgbSolar) {
+  const x = Math.max(0, Math.min(1, f)) * (ramp.length - 1);
+  const i = Math.min(ramp.length - 2, Math.floor(x));
   const u = x - i;
-  const a = rampRgb[i], b = rampRgb[i + 1];
+  const a = ramp[i], b = ramp[i + 1];
   return [
     Math.round(a[0] + (b[0] - a[0]) * u),
     Math.round(a[1] + (b[1] - a[1]) * u),
@@ -136,7 +168,8 @@ export function rampColor(f) {
 
 export function colorFor(eclipse, rangeStartMs, rangeEndMs) {
   const span = Math.max(1, rangeEndMs - rangeStartMs);
-  return rampColor((eclipse.peakMs - rangeStartMs) / span);
+  const ramp = eclipse.body === 'lunar' ? rampRgbLunar : rampRgbSolar;
+  return rampColor((eclipse.peakMs - rangeStartMs) / span, ramp);
 }
 
 export const rgbCss = ([r, g, b], a = 1) => `rgba(${r},${g},${b},${a})`;

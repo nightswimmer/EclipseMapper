@@ -1,10 +1,11 @@
-import { loadEclipses, hitTest, localAt } from './data.js';
+import { loadEclipses, loadLunarEclipses, hitTest, localAt } from './data.js';
 import { Overlay } from './overlay.js';
 import { Globe } from './globe.js';
-import { RangeSlider, Filters, Tooltip } from './ui.js';
+import { RangeSlider, Filters, Tooltip, TypePopups, filterKey } from './ui.js';
 
 const container = document.getElementById('globe-container');
 const tooltip = new Tooltip();
+new TypePopups();
 
 let eclipses = [];
 let visible = [];
@@ -36,17 +37,26 @@ function queueRedraw() {
 function refreshVisible() {
   const inRange = eclipses.filter((e) => e.peakMs >= range.startMs && e.peakMs <= range.endMs);
   filters.updateCounts(inRange);
-  visible = inRange.filter((e) => filters.enabled.has(e.kind));
+  visible = inRange.filter((e) => filters.enabled.has(filterKey(e)));
   if (selectedId !== null && !visible.some((e) => e.id === selectedId)) selectedId = null;
   document.getElementById('range-count').textContent =
     `${visible.length} of ${eclipses.length} eclipses shown`;
   queueRedraw();
 }
 
-// Where an eclipse responds to the pointer: central eclipses on their band
-// (plus the full zone once selected), partial eclipses on their region.
+// Where an eclipse responds to the pointer: central solar eclipses on their
+// band (plus the full zone once selected), partial solar eclipses on their
+// region, lunar eclipses anywhere in their visibility zone.
 function hitRings(e) {
+  if (e.body === 'lunar') return e.zoneAnyRings;
   return e.bandRing && e.id !== selectedId ? [e.bandRing] : e.regionRings;
+}
+
+// Per-point info for the tooltip: local circumstances for solar eclipses,
+// full-vs-partial visibility for lunar ones.
+function localInfo(e, lat, lon) {
+  if (e.body === 'lunar') return { fully: hitTest(e, lat, lon, e.zoneAllRings) };
+  return localAt(e, lat, lon);
 }
 
 function hitsAt(lat, lon) {
@@ -65,7 +75,7 @@ function handleHover(lat, lon, clientX, clientY) {
     queueRedraw();
   }
   hits.length
-    ? tooltip.show(hits.map((e) => ({ eclipse: e, local: localAt(e, lat, lon) })), range, clientX, clientY)
+    ? tooltip.show(hits.map((e) => ({ eclipse: e, local: localInfo(e, lat, lon) })), range, clientX, clientY)
     : tooltip.hide();
 }
 
@@ -91,10 +101,10 @@ const setsEqual = (a, b) => a.size === b.size && [...a].every((v) => b.has(v));
 
 let filters;
 
-loadEclipses().then((list) => {
-  eclipses = list;
-  const minMs = Math.min(...list.map((e) => e.peakMs)) - 86400e3;
-  const maxMs = Math.max(...list.map((e) => e.peakMs)) + 86400e3;
+Promise.all([loadEclipses(), loadLunarEclipses()]).then(([solar, lunar]) => {
+  eclipses = [...solar, ...lunar];
+  const minMs = Math.min(...eclipses.map((e) => e.peakMs)) - 86400e3;
+  const maxMs = Math.max(...eclipses.map((e) => e.peakMs)) + 86400e3;
 
   // Default window: today through ten years from now.
   const clampMs = (ms) => Math.max(minMs, Math.min(maxMs, ms));
@@ -102,16 +112,17 @@ loadEclipses().then((list) => {
   const defStart = clampMs(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const defEnd = clampMs(Date.UTC(now.getUTCFullYear() + 10, now.getUTCMonth(), now.getUTCDate()));
 
-  // Optional URL params: ?start=2026&end=2040&kinds=total,annular
+  // Optional URL params: ?start=2026&end=2040&kinds=total,annular&lunar=total,partial
   const params = new URLSearchParams(location.search);
   const yearMs = (y, fallback) => {
     const n = parseInt(y, 10);
     return Number.isFinite(n) ? clampMs(Date.UTC(n, 0, 1)) : fallback;
   };
   range = { startMs: yearMs(params.get('start'), defStart), endMs: yearMs(params.get('end'), defEnd) };
-  if (params.get('kinds')) {
-    const wanted = new Set(params.get('kinds').split(','));
-    for (const box of document.querySelectorAll('#filters input')) {
+  for (const [param, body] of [['kinds', 'solar'], ['lunar', 'lunar']]) {
+    if (!params.get(param)) continue;
+    const wanted = new Set(params.get(param).split(','));
+    for (const box of document.querySelectorAll(`#filters input[data-body="${body}"]`)) {
       box.checked = wanted.has(box.dataset.kind);
     }
   }

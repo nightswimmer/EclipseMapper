@@ -92,6 +92,9 @@ export class Globe {
     const el = this.renderer.domElement;
     let lastX = 0, lastY = 0;
 
+    // Right button rotates like the left one; keep the browser menu out of the way.
+    el.addEventListener('contextmenu', (ev) => ev.preventDefault());
+
     el.addEventListener('pointerdown', (ev) => {
       this.dragging = true;
       this.moved = false;
@@ -119,9 +122,10 @@ export class Globe {
       if (!this.dragging) return;
       this.dragging = false;
       if (el.hasPointerCapture(ev.pointerId)) el.releasePointerCapture(ev.pointerId);
-      // A press that never moved is a click: report what's under it (or null
-      // for empty space, so the caller can clear its selection).
-      if (!this.moved && this.onClick) {
+      // A primary-button press that never moved is a click: report what's
+      // under it (or null for empty space, so the caller can clear its
+      // selection). Right-button presses only rotate.
+      if (!this.moved && this.onClick && ev.button === 0) {
         const g = this.pointToLatLon(ev);
         this.onClick(g?.lat ?? null, g?.lon ?? null);
       }

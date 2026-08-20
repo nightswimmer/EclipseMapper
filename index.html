@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Eclipse Mapper — 100 Years of Solar Eclipses</title>
+  <title>Eclipse Mapper — Solar &amp; Lunar Eclipses</title>
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
@@ -31,15 +31,27 @@
         </div>
 
         <div id="filters" role="group" aria-label="Eclipse types">
-          <label><input type="checkbox" data-kind="total" checked /><span>Total</span><em id="count-total"></em></label>
-          <label><input type="checkbox" data-kind="annular" checked /><span>Annular</span><em id="count-annular"></em></label>
-          <label><input type="checkbox" data-kind="hybrid" checked /><span>Hybrid</span><em id="count-hybrid"></em></label>
-          <label><input type="checkbox" data-kind="partial" /><span>Partial</span><em id="count-partial"></em></label>
+          <div class="filter-group" role="group" aria-label="Solar eclipse types">
+            <span class="filter-title">Solar</span>
+            <label><input type="checkbox" data-body="solar" data-kind="total" checked /><span>Total</span><em id="count-solar-total"></em></label>
+            <label><input type="checkbox" data-body="solar" data-kind="annular" checked /><span>Annular</span><em id="count-solar-annular"></em></label>
+            <label><input type="checkbox" data-body="solar" data-kind="hybrid" checked /><span>Hybrid</span><em id="count-solar-hybrid"></em></label>
+            <label><input type="checkbox" data-body="solar" data-kind="partial" /><span>Partial</span><em id="count-solar-partial"></em></label>
+          </div>
+          <div class="filter-group" role="group" aria-label="Lunar eclipse types">
+            <span class="filter-title">Lunar</span>
+            <label><input type="checkbox" data-body="lunar" data-kind="total" /><span>Total</span><em id="count-lunar-total"></em></label>
+            <label><input type="checkbox" data-body="lunar" data-kind="partial" /><span>Partial</span><em id="count-lunar-partial"></em></label>
+            <label><input type="checkbox" data-body="lunar" data-kind="penumbral" /><span>Penumbral</span><em id="count-lunar-penumbral"></em></label>
+          </div>
         </div>
 
         <div id="legend">
           <span class="legend-caption">sooner</span>
-          <div id="legend-ramp"></div>
+          <div id="legend-ramps">
+            <div class="legend-row"><span class="legend-name">solar</span><div class="legend-ramp" id="ramp-solar"></div></div>
+            <div class="legend-row"><span class="legend-name">lunar</span><div class="legend-ramp" id="ramp-lunar"></div></div>
+          </div>
           <span class="legend-caption">later</span>
         </div>
       </div>
@@ -47,7 +59,7 @@
 
     <main id="globe-container">
       <div id="loading">Loading eclipse data…</div>
-      <div id="hint">Drag to rotate · scroll to zoom · hover a path for local timing · click a path to isolate it and see its full visibility zone</div>
+      <div id="hint">Drag to rotate · scroll to zoom · hover a path or region for local details · click to isolate one eclipse</div>
     </main>
 
     <div id="tooltip" hidden></div>
